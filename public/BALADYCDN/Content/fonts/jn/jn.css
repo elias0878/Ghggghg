@@ -1,0 +1,24 @@
+
+@font-face {
+    font-family: 'jn';
+    src: url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltregular.eot');
+    src: url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltregular.eot') format('embedded-opentype'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltregular.woff2') format('woff2'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltregular.woff') format('woff'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltregular.ttf') format('truetype'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltregular.svg') format('svg');
+	     font-weight:400;
+}
+
+
+
+@font-face {
+    font-family: 'jn';
+    src: url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltbold.eot');
+    src: url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltbold.eot') format('embedded-opentype'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltbold.woff2') format('woff2'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltbold.woff') format('woff'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltbold.ttf') format('truetype'),
+         url('https://apps.balady.gov.sa/BALADYCDN/Content/fonts/jn/fonts/jannaltbold.svg') format('svg');
+	     font-weight:700;
+}

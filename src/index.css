@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'TajawalLocal';
+  src: url('/assets/fonts/Tajawal-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TajawalLocal';
+  src: url('/assets/fonts/Tajawal-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NotoKufi';
+  src: url('/assets/fonts/NotoKufiArabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NotoKufi';
+  src: url('/assets/fonts/NotoKufiArabic-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PdfLiberationSerif';
+  src: url('/assets/fonts/13_AAAAAA+LiberationSerif.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PdfArial';
+  src: url('/assets/fonts/16_CAAAAA+ArialMT.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  font-family: 'TajawalLocal', 'NotoKufi', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============ Official Balady float-label fields ============ */
+.balady-float {
+  position: relative;
+  display: block;
+  margin-bottom: 1.1rem;
+}
+.balady-float input {
+  width: 100%;
+  border: 1px solid #d3dcdf;
+  border-radius: 10px;
+  background: #fbfcfd;
+  padding: 1.35rem 0.9rem 0.45rem;
+  font-size: 0.92rem;
+  color: #1a2b2e;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.balady-float input:focus {
+  border-color: #07706d;
+  box-shadow: 0 0 0 3px rgba(7, 112, 109, 0.12);
+  background: #fff;
+}
+.balady-float > span {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.95rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #07706d;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.balady-float input.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* ============ Balady preloader ============ */
+@keyframes balady-spin {
+  to { transform: rotate(360deg); }
+}
+.balady-loader-ring {
+  width: 46px;
+  height: 46px;
+  border-radius: 9999px;
+  border: 4px solid #dcebe9;
+  border-top-color: #07706d;
+  animation: balady-spin 0.9s linear infinite;
+}
+
+/* ============ Print: certificate only ============ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .balady-root {
+    background: #fff !important;
+  }
+  .print-card {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .print-main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+}
