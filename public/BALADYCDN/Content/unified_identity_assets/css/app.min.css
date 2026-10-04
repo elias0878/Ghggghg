@@ -39,11 +39,11 @@
 }
 @font-face {
     font-family: "hgi-stroke-rounded";
-    src: url("../icons/hugeicons-font/hgi-stroke-rounded.eot%3Ft=1721855138058");
-    src: url("../icons/hugeicons-font/hgi-stroke-rounded.eot%3Ft=1721855138058") format("embedded-opentype"), 
-         url("../icons/hugeicons-font/hgi-stroke-rounded.woff2%3Ft=1721855138058") format("woff2"), 
-         url("../icons/hugeicons-font/hgi-stroke-rounded.woff%3Ft=1721855138058") format("woff"), 
-         url("../icons/hugeicons-font/hgi-stroke-rounded.ttf%3Ft=1721855138058") format("truetype")
+    src: url("../icons/hugeicons-font/hgi-stroke-rounded.eot");
+    src: url("../icons/hugeicons-font/hgi-stroke-rounded.eot") format("embedded-opentype"), 
+         url("../icons/hugeicons-font/hgi-stroke-rounded.woff2") format("woff2"), 
+         url("../icons/hugeicons-font/hgi-stroke-rounded.woff") format("woff"), 
+         url("../icons/hugeicons-font/hgi-stroke-rounded.ttf") format("truetype")
 }
 body {
     color: #000;
