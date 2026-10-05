@@ -276,7 +276,7 @@ function CertificatePdfView({ cert, publicLink }: { cert: Certificate; publicLin
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-[#e9edf0] py-6 px-3 flex flex-col items-center">
+    <div className="pdf-screen-wrap w-full min-h-screen bg-[#e9edf0] py-6 px-3 flex flex-col items-center">
       <div className="print:hidden mb-4 flex items-center gap-3">
         <button
           onClick={() => window.print()}
@@ -438,15 +438,39 @@ function CertificatePdfView({ cert, publicLink }: { cert: Certificate; publicLin
         .pdf-p2-s4 { left: 899px; top: 516px; }
 
         @media print {
-          @page { size: A4 landscape; margin: 0; }
-          body { background: #fff !important; padding: 0 !important; }
-          .pdf-stack { max-width: none !important; width: 100% !important; gap: 0 !important; }
-          .pdf-page-host {
-            max-width: none !important; width: 100vw !important; height: 100vh !important;
-            page-break-after: always !important; break-after: page !important;
+          /* PDF فقط: وجهان في صفحة A4 عمودية واحدة — البطاقة الأولى للمنتصف والثانية تكمل الصفحة */
+          @page { size: A4 portrait; margin: 0; }
+          html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+          .pdf-screen-wrap { padding: 0 !important; background: #fff !important; min-height: 0 !important; display: block !important; }
+          .pdf-stack {
+            max-width: none !important;
+            width: 794px !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 64px 0 0 !important;
+            gap: 0 !important;
           }
-          .pdf-page-host:last-child { page-break-after: auto !important; break-after: auto !important; }
-          .pdf-canvas { position: absolute !important; box-shadow: none !important; top: 0 !important; left: 0 !important; }
+          .pdf-page-host {
+            max-width: none !important;
+            width: 740px !important;
+            aspect-ratio: auto !important;
+            margin: 0 auto !important;
+            overflow: hidden !important;
+            page-break-inside: avoid !important; break-inside: avoid !important;
+            page-break-after: avoid !important; break-after: avoid !important;
+          }
+          /* ارتفاع كل بطاقة بعد التصغير (740/1012 و 740/1011) مع سماح بكسل إضافي */
+          .pdf-page-host[data-base-w="1012"] { height: 468px !important; }
+          .pdf-page-host[data-base-w="1011"] { height: 469px !important; margin-top: 26px !important; }
+          .pdf-canvas {
+            transform-origin: top left !important;
+            box-shadow: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* نفس تكبير الشاشة يُلغى هنا: نكبّر من اللوحة الأصلية إلى عرض 740px بالضبط */
+          .pdf-page-host[data-base-w="1012"] .pdf-canvas { transform: scale(0.73123) !important; }
+          .pdf-page-host[data-base-w="1011"] .pdf-canvas { transform: scale(0.73195) !important; }
         }
       `}</style>
 
