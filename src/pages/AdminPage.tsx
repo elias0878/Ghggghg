@@ -95,6 +95,61 @@ const emptyForm: CertFormState = {
 
 const DATE_RE = /^\d{4}\/\d{2}\/\d{2}$/;
 
+/* ---------- التواريخ الذكية: تحويلات وأدوات حساب المدة ---------- */
+/** YYYY/MM/DD → YYYY-MM-DD (صيغة input[type=date]) */
+const slashToDash = (s: string) => (/^\d{4}\/\d{2}\/\d{2}$/.test(s) ? s.replace(/\//g, '-') : '');
+/** YYYY-MM-DD → YYYY/MM/DD (صيغة التخزين) */
+const dashToSlash = (s: string) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s.replace(/-/g, '/') : '');
+
+/** إضافة أشهر لتاريخ ميلادي YYYY/MM/DD مع تصحيح اليوم لآخر يوم بالشهر عند الحاجة */
+function addMonthsGregorian(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.split('/').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const day = dt.getUTCDate();
+  dt.setUTCDate(1);
+  dt.setUTCMonth(dt.getUTCMonth() + months);
+  const daysInTarget = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+  dt.setUTCDate(Math.min(day, daysInTarget));
+  return dt.toISOString().slice(0, 10).replace(/-/g, '/');
+}
+
+/** تحويل ميلادي → هجري (تقويم أم القرى) عبر Intl المدمج في المتصفح */
+function gregorianToHijri(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('/').map(Number);
+    if (!y || !m || !d) return '';
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const fmt = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura-nu-latn', {
+      year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC',
+    });
+    const parts = fmt.formatToParts(dt);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value || '';
+    const hy = get('year').replace(/[^0-9]/g, '');
+    if (!hy) return '';
+    return `${hy}/${get('month')}/${get('day')}`;
+  } catch {
+    return '';
+  }
+}
+
+/** خيارات مدة الشهادة (بالشهور) */
+const DURATION_OPTIONS: { value: string; label: string }[] = [
+  { value: '1', label: 'شهر واحد' },
+  { value: '2', label: 'شهران' },
+  { value: '3', label: '3 أشهر' },
+  { value: '6', label: '6 أشهر' },
+  { value: '12', label: 'سنة (12 شهرًا)' },
+];
+
+/** استنتاج مدة الشهادة من تاريخي إصدار/انتهاء موجودين (لوضع التعديل) */
+function inferDurationMonths(issue: string, expiry: string): string {
+  if (!DATE_RE.test(issue) || !DATE_RE.test(expiry)) return '3';
+  const [iy, im] = issue.split('/').map(Number);
+  const [ey, em] = expiry.split('/').map(Number);
+  const diff = (ey - iy) * 12 + (em - im);
+  return DURATION_OPTIONS.some((o) => o.value === String(diff)) ? String(diff) : '3';
+}
+
 function isValidDateStr(v: string): boolean {
   if (!DATE_RE.test(v)) return false;
   const [y, m, d] = v.split('/').map(Number);
@@ -305,6 +360,45 @@ export default function AdminPage() {
       else delete next[key];
       return next;
     });
+  };
+
+  /* ---------- التواريخ الذكية ---------- */
+  const [certDuration, setCertDuration] = useState('3');
+
+  /** تطبيق المنطق الذكي بالكامل من تاريخ الإصدار الميلادي:
+   *  هجري الإصدار + تاريخ الانتهاء ميلادي/هجري = إصدار + المدة المختارة */
+  const applySmartDates = (issueSlash: string, months: number) => {
+    setForm((prev) => {
+      if (!issueSlash) {
+        return { ...prev, issue_date_gregorian: '', issue_date_hijri: '', expiry_date_gregorian: '', expiry_date_hijri: '' };
+      }
+      const expiry = addMonthsGregorian(issueSlash, months);
+      return {
+        ...prev,
+        issue_date_gregorian: issueSlash,
+        issue_date_hijri: gregorianToHijri(issueSlash),
+        expiry_date_gregorian: expiry,
+        expiry_date_hijri: gregorianToHijri(expiry),
+      };
+    });
+    setTouched((prev) => ({
+      ...prev,
+      issue_date_gregorian: true, issue_date_hijri: true,
+      expiry_date_gregorian: true, expiry_date_hijri: true,
+    }));
+  };
+
+  /** فتح نافذة اختيار التاريخ المنبثقة عند النقر (input[type=date] + showPicker) */
+  const openDatePicker = (e: React.MouseEvent<HTMLInputElement>) => {
+    const el = e.currentTarget;
+    try { el.showPicker?.(); } catch { /* المتصفحات القديمة تفتحها بالنقر تلقائيًا */ }
+  };
+
+  const onIssueDatePick = (dashValue: string) => applySmartDates(dashToSlash(dashValue), Number(certDuration));
+
+  const onDurationChange = (v: string) => {
+    setCertDuration(v);
+    if (DATE_RE.test(form.issue_date_gregorian)) applySmartDates(form.issue_date_gregorian, Number(v));
   };
 
   // ---------- Data fetching (API first, Supabase fallback) ----------
@@ -690,6 +784,7 @@ export default function AdminPage() {
       setFile(null);
       setPreview('');
       setForm(emptyForm);
+      setCertDuration('3');
       setFieldErrors({});
       setTouched({});
       fetchCertificates();
@@ -725,6 +820,11 @@ export default function AdminPage() {
       facility_number: cert.facility_number || '',
       status: cert.status || 'سارية',
     });
+    // استنتاج مدة الشهادة من التواريخ المخزنة ليبقى القائمة الذكية متسقة في وضع التعديل
+    setCertDuration(inferDurationMonths(
+      cert.issue_date_gregorian || cert.issue_date || '',
+      cert.expiry_date_gregorian || cert.expiry_date || ''
+    ));
     setFieldErrors({});
     setTouched({});
     setError('');
@@ -737,6 +837,7 @@ export default function AdminPage() {
   const cancelEdit = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setCertDuration('3');
     setFieldErrors({});
     setTouched({});
     setFile(null);
@@ -1220,33 +1321,56 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Dates */}
+              {/* Dates — smart: picker + duration → auto-computed expiry & Hijri */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3">
                 <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
-                  <Calendar className="w-4 h-4 text-[#0b5435]" /> تواريخ الإصدار والانتهاء (هجري وميلادي)
+                  <Calendar className="w-4 h-4 text-[#0b5435]" /> تواريخ الإصدار والانتهاء (تلقائية بالكامل)
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ الإصدار (هجري)</label>
-                    <input value={form.issue_date_hijri} onChange={(e) => setField('issue_date_hijri', e.target.value)} className={fieldClass('issue_date_hijri')} placeholder="YYYY/MM/DD" />
-                    <FieldError name="issue_date_hijri" />
+                    <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ الإصدار (ميلادي) — اختر من النافذة المنبثقة</label>
+                    <input
+                      type="date"
+                      value={slashToDash(form.issue_date_gregorian)}
+                      onChange={(e) => onIssueDatePick(e.target.value)}
+                      onClick={openDatePicker}
+                      className={fieldClass('issue_date_gregorian')}
+                    />
+                    <FieldError name="issue_date_gregorian" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ الإصدار (ميلادي)</label>
-                    <input value={form.issue_date_gregorian} onChange={(e) => setField('issue_date_gregorian', e.target.value)} className={fieldClass('issue_date_gregorian')} placeholder="YYYY/MM/DD" />
-                    <FieldError name="issue_date_gregorian" />
+                    <label className="text-xs font-medium text-slate-700 mb-1 block">مدة الشهادة</label>
+                    <select
+                      value={certDuration}
+                      onChange={(e) => onDurationChange(e.target.value)}
+                      className={fieldClass('issue_date_gregorian')}
+                    >
+                      {DURATION_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ النهاية (هجري)</label>
-                    <input value={form.expiry_date_hijri} onChange={(e) => setField('expiry_date_hijri', e.target.value)} className={fieldClass('expiry_date_hijri')} placeholder="YYYY/MM/DD" />
-                    <FieldError name="expiry_date_hijri" />
+                    <label className="text-xs font-medium text-slate-700 mb-1 block">
+                      تاريخ النهاية (ميلادي) <span className="text-emerald-600">— يُحسب تلقائيًا</span>
+                    </label>
+                    <input value={form.expiry_date_gregorian} readOnly className={`${fieldClass('expiry_date_gregorian')} bg-slate-100 text-slate-600 cursor-not-allowed`} placeholder="—" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ النهاية (ميلادي)</label>
-                    <input value={form.expiry_date_gregorian} onChange={(e) => setField('expiry_date_gregorian', e.target.value)} className={fieldClass('expiry_date_gregorian')} placeholder="YYYY/MM/DD" />
-                    <FieldError name="expiry_date_gregorian" />
+                    <label className="text-xs font-medium text-slate-700 mb-1 block">
+                      تاريخ النهاية (هجري) <span className="text-emerald-600">— تلقائي</span>
+                    </label>
+                    <input value={form.expiry_date_hijri} readOnly className={`${fieldClass('expiry_date_hijri')} bg-slate-100 text-slate-600 cursor-not-allowed`} placeholder="—" />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 mb-1 block">
+                      تاريخ الإصدار (هجري) <span className="text-emerald-600">— تلقائي</span>
+                    </label>
+                    <input value={form.issue_date_hijri} readOnly className={`${fieldClass('issue_date_hijri')} bg-slate-100 text-slate-600 cursor-not-allowed`} placeholder="—" />
                   </div>
                 </div>
               </div>
@@ -1262,8 +1386,14 @@ export default function AdminPage() {
                   inputClass={fieldClass('program_name')}
                 />
                 <div>
-                  <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ إنتهاء البرنامج التثقيفي</label>
-                  <input value={form.program_expiry_date} onChange={(e) => setField('program_expiry_date', e.target.value)} className={fieldClass('program_expiry_date')} placeholder="YYYY/MM/DD" />
+                  <label className="text-xs font-medium text-slate-700 mb-1 block">تاريخ إنتهاء البرنامج التثقيفي — اختر من النافذة</label>
+                  <input
+                    type="date"
+                    value={slashToDash(form.program_expiry_date)}
+                    onChange={(e) => setField('program_expiry_date', dashToSlash(e.target.value))}
+                    onClick={openDatePicker}
+                    className={fieldClass('program_expiry_date')}
+                  />
                   <FieldError name="program_expiry_date" />
                 </div>
               </div>
